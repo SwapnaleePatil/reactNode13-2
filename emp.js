@@ -73,9 +73,7 @@ empSchema.methods.generateAuthToken=function(){
     })
 
 }
-
 var emp=mongoose.model('emp',empSchema);
-
 app.use((req,res,next) =>{
 
     res.header('Access-Control-Allow-Origin',' http://localhost:3000');
@@ -83,11 +81,9 @@ app.use((req,res,next) =>{
 
     next();
 });
-
 app.get('/',(req,res)=>{
      res.send("WelCOme To This Site");
 });
-
 app.post('/savedata',(req,res)=>{
     console.log("Req:",req.body);
 
@@ -112,4 +108,57 @@ var newEmp=new emp({
     console.log("Error",e);
 });
 });
+
+app.get('/fetch',(req,res)=>{
+      emp.find({},(err, emps)=>{
+        if(err) throw error;
+        console.log(emps)
+        res.send(emps);
+    });
+})
+app.post('/delete',(req,res)=>{
+    let id=req.body.id;
+    console.log(id);
+    emp.findByIdAndRemove(id).then((emp)=>{
+        if (!emp) {
+            res.status(404).send();
+        }
+        res.send(emp);
+    }).catch ((e)=>{
+        console.log(`error : ${e.message}`);
+        res.status(404).send();
+    })
+});
+
+app.post('findbyid',(req,res)=>{
+    let id=req.body.id;
+
+    emp.find({_id:id}).then((emp)=>{
+        if(!emp)
+        {
+            console.log(`${id} Id Not Found `);
+            res.status(404).send();
+        }
+
+        res.send(emp);
+    }).catch((e)=>{
+        console.log(`Error : ${e.message}`);
+        res.status(404).send();
+    });
+});
+app.patch('update',(req,res)=>{
+    let body=_.pick(req.body,['id','ename','email','password','pno','gender','city','agree']);
+    let id=body.id;
+
+    Student.findByIdAndUpdate(id,{$set:body}).then((student)=>{
+        if(!student){
+            console.log(`${id} Id Not Found`);
+            res.status(404).send();
+        }
+        res.send(student);
+    }).catch((e)=>{
+        console.log(`Error : ${e.message}`);
+    });
+});
+
 app.listen('5000');
