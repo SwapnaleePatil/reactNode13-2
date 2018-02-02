@@ -85,7 +85,7 @@ app.get('/',(req,res)=>{
      res.send("WelCOme To This Site");
 });
 app.post('/savedata',(req,res)=>{
-    console.log("Req:",req.body);
+    //console.log("Req:",req.body);
 
 var newEmp=new emp({
 
@@ -130,8 +130,9 @@ app.post('/delete',(req,res)=>{
     })
 });
 
-app.post('findbyid',(req,res)=>{
+app.post('/edit',(req,res)=>{
     let id=req.body.id;
+    console.log("Edit id",req.body.id);
 
     emp.find({_id:id}).then((emp)=>{
         if(!emp)
@@ -139,16 +140,17 @@ app.post('findbyid',(req,res)=>{
             console.log(`${id} Id Not Found `);
             res.status(404).send();
         }
-
+        console.log("Edit",emp);
         res.send(emp);
     }).catch((e)=>{
         console.log(`Error : ${e.message}`);
         res.status(404).send();
     });
 });
-app.patch('update',(req,res)=>{
+
+app.patch('/update',(req,res)=>{
     let body=_.pick(req.body,['id','ename','email','password','pno','gender','city','agree']);
-    let id=body.id;
+    let id=req.body.id;
 
     Student.findByIdAndUpdate(id,{$set:body}).then((student)=>{
         if(!student){
