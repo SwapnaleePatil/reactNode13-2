@@ -1,10 +1,12 @@
 var mongoose =require('mongoose');
-mongoose.Promise=global.Promise;
 var express=require('express');
 var bodyParser=require('body-parser');
 var validator=require('validator');
 var jwt=require('jsonwebtoken')
 const _ = require('lodash');
+var bcrypt=require('bcryptjs');
+
+mongoose.Promise=global.Promise;
 mongoose.connect("mongodb://localhost:27017/reactapp");
 var app=express();
 
@@ -73,7 +75,25 @@ empSchema.methods.generateAuthToken=function(){
     })
 
 }
+
+empSchema.pre('save',function (next) {
+    const emp=this;
+    if(emp.isModified('password')){
+        bcrypt.genSalt(10,(err,salt)=>{
+            bcrypt.hash(emp.password,salt,(err,hash)=>{
+                emp.password=hash;
+                next();
+            })
+        })
+    }
+    else{
+        next();
+    }
+})
+
 var emp=mongoose.model('emp',empSchema);
+
+
 app.use((req,res,next) =>{
 
     res.header('Access-Control-Allow-Origin',' http://localhost:3000');
@@ -108,7 +128,6 @@ var newEmp=new emp({
     console.log("Error",e);
 });
 });
-
 app.get('/fetch',(req,res)=>{
       emp.find({},(err, emps)=>{
         if(err) throw error;
@@ -129,7 +148,6 @@ app.post('/delete',(req,res)=>{
         res.status(404).send();
     })
 });
-
 app.post('/edit',(req,res)=>{
     let id=req.body.id;
     console.log("Edit id",req.body.id);
@@ -147,20 +165,48 @@ app.post('/edit',(req,res)=>{
         res.status(404).send();
     });
 });
-
-app.patch('/update',(req,res)=>{
+app.post('/update',(req,res)=>{
     let body=_.pick(req.body,['id','ename','email','password','pno','gender','city','agree']);
     let id=req.body.id;
-
-    Student.findByIdAndUpdate(id,{$set:body}).then((student)=>{
-        if(!student){
+console.log("Body:",body);
+    emp.findByIdAndUpdate(id,{$set:body}).then((emp)=>{
+        if(!emp){
             console.log(`${id} Id Not Found`);
             res.status(404).send();
         }
-        res.send(student);
+        res.send(emp);
     }).catch((e)=>{
         console.log(`Error : ${e.message}`);
     });
 });
 
+
+
+
+app.post('/login',(req,res)=>{
+    console.log(req.body.email);
+    let email=req.body.email;
+    let password=req.body.password;
+
+    emp.findOne({email},(err,user)=>{
+        if(user) {
+            console.log("Email Found");
+
+                bcrypt.compare(password, user.password, (err, result) => {
+                    if (result) {
+                       // console.log("Success");
+                       res.send(user);}
+                    else {
+                       // console.log("Alert");
+                        res.send("Alert");
+                    }
+                })
+
+
+        }
+        }).catch((e)=>{
+        res.status(400).send();
+    })
+//    res.send(body);
+})
 app.listen('5000');
