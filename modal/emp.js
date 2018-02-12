@@ -18,6 +18,7 @@ var empSchema=new mongoose.Schema({
         type:String,
         required:true,
         trim:true,
+        unique:true,
         validate:{
             validator:validator.isEmail,
             message:'{Value} is not valid Email'

@@ -9,21 +9,36 @@ var {authenticatee}=require('./mid/authenticate');
 var {emp}=require('./modal/emp');
 var app=express();
 
+//Google
+var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
+var configAuth=require("./config/auth");
+
+//FAcebook Strategy
+var FacebookStrategy=require('passport-facebook').Strategy;
+
+//Passport Simple
 const passport=require('passport');
 const LocalStrategy=require('passport-local').Strategy;
 
 app.use(bodyParser.json());
+//app.use(bodyParser.urlencoded({encoded:true}));
 
 app.use(passport.initialize());
 app.use(passport.session());
 
+//Passport start
+
 app.use((req,res,next) =>{
 
-    res.header('Access-Control-Allow-Origin',' http://localhost:3000');
+    res.header("Access-Control-Allow-Origin","*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Credentials",true);
+    res.header(`Access-Control-Allow-Methods`, `POST`);
+    res.header(`Access-Control-Allow-Methods`, `DELETE`);
+    res.header(`Access-Control-Allow-Methods`, `PATCH`);
+    res.header(`Access-Control-Expose-Headers`, `x-auth`);
     next();
 });
-
 passport.serializeUser((emp,done)=>{
     console.log('Serialize');
     return done(null,emp);
@@ -32,7 +47,6 @@ passport.deserializeUser((emp,done)=>{
     console.log('Deserialize');
     return done(null,emp);
 })
-
 passport.use(new LocalStrategy ((username,password,done)=>{
     console.log("Username & password in Passport",username,password);
     emp.findOne({email:username},(err,user)=>{
@@ -59,13 +73,46 @@ passport.use(new LocalStrategy ((username,password,done)=>{
         res.status(400).send();
     })
 }))
-
 app.post('/logP',passport.authenticate('local',{
     successRedirect: '/fetch',
     failureRedirect: '/logP',
 }));
+//Passport Over
+//Google Start
+passport.use(new GoogleStrategy({
+        clientID        : configAuth.googleAuth.clientID,
+        clientSecret    : configAuth.googleAuth.clientSecret,
+        callbackURL     : configAuth.googleAuth.callbackURL,
+    },
+    function(token, refreshToken, profile, done) {
+        process.nextTick(function() {
+            emp.findOne({ 'google.id' : profile.id }, function(err, user) {
+                if (err)
+                    return done(err);
+                if (user) {
+                    return done(null, user);
+                } else {
+                    var newUser= new emp({
+                    id    : profile.id,
+                    token : token,
+                    ename  : profile.displayName,
+                    email : profile.emails[0].value // pull the first email
 
+                });
 
+                    // save the user
+                    newUser.save(function(err) {
+                        if (err)
+                            throw err;
+                        return done(null, newUser);
+                    });
+                }
+            });
+        });
+
+    }));
+
+//Google Over
 
 app.get('/',(req,res)=>{
     res.send("WelCOme To This Site");
@@ -179,4 +226,6 @@ app.post('/login',(req,res)=>{
     })
 //    res.send(body);
 })
+
+require('./route')(app,passport);
 app.listen('5000');
