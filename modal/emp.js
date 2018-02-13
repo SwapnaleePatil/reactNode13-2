@@ -18,7 +18,6 @@ var empSchema=new mongoose.Schema({
         type:String,
         required:true,
         trim:true,
-        unique:true,
         validate:{
             validator:validator.isEmail,
             message:'{Value} is not valid Email'
@@ -62,7 +61,7 @@ empSchema.methods.toJSON=function () {
     var emp=this;
  var empObject=emp.toObject();
 
- return _.pick(empObject,['ename','email','password','gender','city','pno','agree']);
+ return _.pick(empObject,['_id','ename','email','password','gender','city','pno','agree']);
 
 }
 empSchema.methods.generateAuthToken=function(){
@@ -124,6 +123,4 @@ empSchema.pre('save',function (next) {
 })
 
 var emp=mongoose.model('emp',empSchema);
-
 module.exports={emp};
-

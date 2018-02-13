@@ -86,6 +86,8 @@ passport.use(new GoogleStrategy({
     },
     function(token, refreshToken, profile, done) {
         process.nextTick(function() {
+
+
             emp.findOne({ 'google.id' : profile.id }, function(err, user) {
                 if (err)
                     return done(err);
@@ -132,7 +134,6 @@ app.post('/savedata',(req,res)=>{
     });
 
     newEmp.save().then(()=>{
-
             return newEmp.generateAuthToken();
         }
     ).then((token)=>{
